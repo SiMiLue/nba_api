@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NBA Teams by Division</title>
+    <style>
+        .division {
+            margin-bottom: 40px;
+        }
+        .team-card {
+            display: inline-block;
+            width: 180px;
+            text-align: center;
+            margin: 10px;
+        }
+        img {
+            width: 80px;
+            height: 80px;
+        }
+    </style>
+</head>
+<body>
+    <h1>NBA Teams by Division</h1>
+    <!-- <pre>{{ divisions|safe }}</pre> -->
+
+    {% for division, teams in divisions.items %}
+        <div class="division">
+            <h2>{{ division }}</h2>
+            {% for team in teams %}
+                <div class="team-card">
+                    <img src="{{ team.logo_url }}" alt="{{ team.full_name }}">
+                    <p>{{ team.full_name }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+</body>
+</html>
