@@ -32,6 +32,18 @@ def team_list(request):
 
     return render(request, "teams/Team.html", {"teams": all_teams})
 
+def team_detail(request, id):
+    all_teams = nba_teams.get_teams()
+    team = next((t for t in all_teams if t["id"] == id), None)
+    return render(request, "teams/TeamDetail.html", {"team": team})
+
+
+
+
+
+
+
+
 
 DIVISION_MAP = {
     # Atlantic Division

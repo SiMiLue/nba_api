@@ -1,36 +1,80 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta charset="UTF-8">
     <title>NBA Teams by Division</title>
     <style>
-        .division {
-            margin-bottom: 40px;
-        }
-        .team-card {
-            display: inline-block;
-            width: 180px;
+        body {
+            background-color: #ffffff;
+            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             text-align: center;
-            margin: 10px;
+            padding: 2rem;
         }
-        img {
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .division {
+            margin-bottom: 60px;
+        }
+
+        .division h2 {
+            font-size: 1.8rem;
+            margin-bottom: 1.2rem;
+            color: #444;
+        }
+
+        .team-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .team-card {
+            width: 140px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .team-card:hover {
+            transform: scale(1.05);
+        }
+
+        .team-card img {
             width: 80px;
             height: 80px;
+            object-fit: contain;
+            background-color: #f9f9f9;
+            border-radius: 50%;
+            padding: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+        }
+
+        .team-card p {
+            margin: 0;
+            font-size: 1rem;
         }
     </style>
 </head>
 <body>
     <h1>NBA Teams by Division</h1>
-    <!-- <pre>{{ divisions|safe }}</pre> -->
 
     {% for division, teams in divisions.items %}
         <div class="division">
             <h2>{{ division }}</h2>
-            {% for team in teams %}
-                <div class="team-card">
-                    <img src="{{ team.logo_url }}" alt="{{ team.full_name }}">
-                    <p>{{ team.full_name }}</p>
-                </div>
-            {% endfor %}
+            <div class="team-container">
+                {% for team in teams %}
+                    <div class="team-card">
+                        <img src="{{ team.logo_url }}" alt="{{ team.full_name }}">
+                        <p>{{ team.full_name }}</p>
+                    </div>
+                {% endfor %}
+            </div>
         </div>
     {% endfor %}
 </body>
