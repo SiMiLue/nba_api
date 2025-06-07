@@ -1,8 +1,12 @@
+from django.shortcuts import render
+
+# Create your views here.
 import requests
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from nba_api.stats.endpoints import commonteamroster, playercareerstats
 from nba_api.stats.static import teams
+
 
 def team_players(request, team_id):
     """顯示指定球隊的所有球員資料"""
