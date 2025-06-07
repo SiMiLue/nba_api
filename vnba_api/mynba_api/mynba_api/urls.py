@@ -22,5 +22,5 @@ from nba import views  # ✅ 改這裡（從 nba 匯入 views）
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('home/', views.home, name='home'),  # 頁面首頁
-    path('players/', include('players.urls')),
+    path('team/', include('players.urls')),
 ]

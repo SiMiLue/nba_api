@@ -4,7 +4,6 @@ from django.http import JsonResponse
 from nba_api.stats.endpoints import commonteamroster, playercareerstats
 from nba_api.stats.static import teams
 
-
 def team_players(request, team_id):
     """顯示指定球隊的所有球員資料"""
     try:
@@ -50,5 +49,3 @@ def team_players(request, team_id):
             'players': []
         }
         return render(request, 'player_list.html', context)
-
-
