@@ -1,13 +1,11 @@
 import asyncio
 import time
 from asgiref.sync import sync_to_async
-
+from .service import team_slug_mapping
 from django.shortcuts import render
 from .service import get_team_info, fetch_team_roster
-
+from django.utils.text import slugify
 from nba_api.stats.static import teams as nba_teams
-from nba_api.stats.static import teams
-from nba_api.stats.endpoints import teamplayerdashboard
 # from nba_api.stats.endpoints import teaminfocommon
 
 from collections import defaultdict
@@ -36,6 +34,7 @@ def team_list(request):
 
     for team in all_teams:
         team['logo_url'] = f"https://cdn.nba.com/logos/nba/{team['id']}/global/L/logo.svg"
+        team['slug'] = team_slug_mapping.get(team['full_name'], '')  # 'Rockets' → 'rockets'
 
     return render(request, "teams/Team.html", {"teams": all_teams})
 

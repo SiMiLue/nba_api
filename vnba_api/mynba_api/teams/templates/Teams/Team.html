@@ -26,7 +26,7 @@
                 <tr>
                     <td>
                         <!-- 非雷神 -->
-                        <a href="{% url 'team-detail' team.id %}">
+                        <a href="{% url 'team-roster' team_slug=team.slug %}">
                             <img src="{{ team.logo_url }}" alt="{{ team.full_name }} logo" width="50">
                         </a>
                     </td>
