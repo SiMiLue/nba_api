@@ -1,9 +1,18 @@
-from nba_api.stats.static import teams as nba_teams
-# from nba_api.stats.static import teams
-# from nba_api.stats.endpoints import teaminfocommon
-from collections import defaultdict
+import asyncio
+import time
+from asgiref.sync import sync_to_async
+
 from django.shortcuts import render
+from .service import get_team_info, fetch_team_roster
+
+from nba_api.stats.static import teams as nba_teams
+from nba_api.stats.static import teams
+from nba_api.stats.endpoints import teamplayerdashboard
+# from nba_api.stats.endpoints import teaminfocommon
+
+from collections import defaultdict
 import pprint
+
 def teams_by_division(request):
     all_teams = nba_teams.get_teams()
     divisions = defaultdict(list)
@@ -22,8 +31,6 @@ def teams_by_division(request):
 
     return render(request, "teams/DivideTeam.html", {"divisions": dict(divisions)})
 
-
-
 def team_list(request):
     all_teams = nba_teams.get_teams()
 
@@ -37,12 +44,26 @@ def team_detail(request, id):
     team = next((t for t in all_teams if t["id"] == id), None)
     return render(request, "teams/TeamDetail.html", {"team": team})
 
+from django.http import JsonResponse
+import asyncio
+from django.shortcuts import render
+from .service import fetch_team_roster, get_team_info
 
+async def team_roster(request, team_slug):
+    """根據球隊 URL slug 顯示球員名單（分批載入，支援異步視圖）"""
+    offset = int(request.GET.get('offset', 0))
+    team_info = get_team_info(team_slug)
 
+    if not team_info:
+        return JsonResponse({'error': f"Team {team_slug} not found", 'players': []})
 
+    players = await fetch_team_roster(team_slug, offset)  # 使用 `await` 來執行異步請求
 
+    # 判斷是 API 請求還是 HTML 渲染
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':  # 判斷是否為 AJAX 請求
+        return JsonResponse({'players': players})
 
-
+    return render(request, 'teams/TeamRoster.html', {'team_slug': team_slug, 'players': players})
 
 
 DIVISION_MAP = {
