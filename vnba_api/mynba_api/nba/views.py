@@ -1,61 +1,55 @@
 from django.shortcuts import render
-from nba_api.stats.endpoints import playercareerstats
+from nba_api.stats.endpoints import (
+    playercareerstats,
+    playerdashboardbyyearoveryear, # <-- 已經導入，現在用於場均數據
+    shotchartdetail,
+    playergamelog,
+)
 from nba_api.stats.endpoints.commonplayerinfo import CommonPlayerInfo
-from nba_api.stats.endpoints import playerdashboardbyyearoveryear
 from nba_api.live.nba.endpoints import scoreboard
-from nba_api.stats.endpoints import shotchartdetail
-from nba_api.stats.static import players, teams # <-- 新增導入
+from nba_api.stats.static import players, teams
 import json
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import io # <-- 新增導入，用於處理圖片緩衝區
-import base64 # <-- 新增導入，用於圖片編碼
+import io
+import base64
 
-# 您提供的輔助函數
-def get_json_from_name(name: str, is_player=True) -> dict: # 修正返回類型為 dict
-    # 從 nba_api.stats.static 導入 players 和 teams (確保在函數外部已導入)
+
+def get_json_from_name(name: str, is_player=True) -> dict:
     if is_player:
         nba_players = players.get_players()
-        # 注意: 這裡您可能需要處理找不到球員的情況，例如返回 None 或拋出錯誤
         result = [player for player in nba_players if player['full_name'] == name]
-        return result[0] if result else None # 返回第一個匹配項或 None
+        return result[0] if result else None
     else:
         nba_teams = teams.get_teams()
         result = [team for team in nba_teams if team['full_name'] == name]
-        return result[0] if result else None # 返回第一個匹配項或 None
+        return result[0] if result else None
 
-def get_player_career(player_id: int) -> pd.DataFrame: # 修正返回類型為 pd.DataFrame
-    # 從 nba_api.stats.endpoints 導入 playercareerstats (確保在函數外部已導入)
+def get_player_career(player_id: int) -> pd.DataFrame:
     career = playercareerstats.PlayerCareerStats(player_id=player_id)
     return career.get_data_frames()[0]
 
-def get_shot_data(player_id: int, team_ids: list, seasons: list) -> pd.DataFrame: # 修正返回類型為 pd.DataFrame, 參數名為 player_id
-    # 從 nba_api.stats.endpoints 導入 shotchartdetail (確保在函數外部已導入)
+def get_shot_data(player_id: int, team_ids: list, seasons: list) -> pd.DataFrame:
     df = pd.DataFrame()
     for season in seasons:
-        for team_id in team_ids: # 確保這裡使用 team_id
+        for team_id in team_ids:
             shot_data = shotchartdetail.ShotChartDetail(
                 team_id=team_id,
                 player_id=player_id,
-                context_measure_simple='FGA', # 通常是 FGA (投籃嘗試), 而不是 PTS
+                context_measure_simple='FGA',
                 season_nullable=season
             )
-            # 檢查 get_data_frames() 是否返回空列表，避免 concat 錯誤
             data_frames = shot_data.get_data_frames()
             if data_frames:
                 df = pd.concat([df, data_frames[0]])
-
     return df
 
-def create_court(ax: mpl.axes.Axes, color="white") -> mpl.axes.Axes: # 修正 ax 類型提示
-    # Short corner 3PT lines
+def create_court(ax: mpl.axes.Axes, color="white") -> mpl.axes.Axes:
     ax.plot([-220, -220], [0, 140], linewidth=2, color=color)
     ax.plot([220, 220], [0, 140], linewidth=2, color=color)
-    # 3PT Arc
     ax.add_artist(mpl.patches.Arc((0, 140), 440, 315, theta1=0, theta2=180, facecolor='none', edgecolor=color, lw=2))
-    # Lane and Key
     ax.plot([-80, -80], [0, 190], linewidth=2, color=color)
     ax.plot([80, 80], [0, 190], linewidth=2, color=color)
     ax.plot([-60, -60], [0, 190], linewidth=2, color=color)
@@ -63,61 +57,56 @@ def create_court(ax: mpl.axes.Axes, color="white") -> mpl.axes.Axes: # 修正 ax
     ax.plot([-80, 80], [190, 190], linewidth=2, color=color)
     ax.add_artist(mpl.patches.Circle((0, 190), 60, facecolor='none', edgecolor=color, lw=2))
     ax.plot([-250, 250], [0, 0], linewidth=4, color='black')
-    # Rim
     ax.add_artist(mpl.patches.Circle((0, 60), 15, facecolor='none', edgecolor=color, lw=2))
-    # Backboard
     ax.plot([-30, 30], [40, 40], linewidth=2, color=color)
-    # Remove ticks
     ax.set_xticks([])
     ax.set_yticks([])
-    # Set axis limits
     ax.set_xlim(-250, 250)
     ax.set_ylim(0, 470)
     return ax
 
-def shot_chart(df: pd.DataFrame, name: str, season=None, RA=True, extent=(-250, 250, 422.5, -47.5),
+def shot_chart(df: pd.DataFrame, name: str, season=None, RA=True, extent=(-250, 250, 0, 470),
                 gridsize=25, cmap="Reds"):
     fig = plt.figure(figsize=(3.6, 3.6), facecolor='white', edgecolor='white', dpi=100)
     ax = fig.add_axes([0, 0, 1, 1], facecolor='white')
     
-    # Plot hexbin of shots
     if RA == True:
             x = df.LOC_X
             y = df.LOC_Y + 60
-            # Annotate player name and season
             plt.text(-240, 430, f"{name}", fontsize=21, color='black')
-            season = f"NBA {season[0][:4]}-{season[-1][-2:]}"
-            plt.text(-250, -20, season, fontsize=8, color='black')
+            if season:
+                season_str = f"NBA {season[0][:4]}-{season[-1][-2:]}" if len(season) > 1 else f"NBA {season[0][:4]}-{str(int(season[0][:4]) + 1)[-2:]}"
+                plt.text(-250, -20, season_str, fontsize=8, color='black')
             plt.text(110, -20, '@codegym_tech', fontsize=8, color='black')
     else:
             cond = ~((-45 < df.LOC_X) & (df.LOC_X < 45) & (-40 < df.LOC_Y) & (df.LOC_Y < 45))
             x = df.LOC_X[cond]
             y = df.LOC_Y[cond] + 60
-            # Annotate player name and season
             plt.text(-240, 430, f"{name}", fontsize=21, color='black')
             plt.text(-240, 400, "(Remove Restricted Area)", fontsize=10, color='red')
-            season = f"NBA {season[0][:4]}-{season[-1][-2:]}"
-            plt.text(-250, -20, season, fontsize=8, color='black')
+            if season:
+                season_str = f"NBA {season[0][:4]}-{season[-1][-2:]}" if len(season) > 1 else f"NBA {season[0][:4]}-{str(int(season[0][:4]) + 1)[-2:]}"
+                plt.text(-250, -20, season_str, fontsize=8, color='black')
             plt.text(110, -20, '@codegym_tech', fontsize=8, color='black')
 
     hexbin = ax.hexbin(x, y, cmap=cmap,
-            bins="log", gridsize=25, mincnt=2, extent= (-250, 250, 0, 470))
+            bins="log", gridsize=25, mincnt=2, extent=extent) # 使用傳入的 extent
 
-    # Draw court
     ax = create_court(ax, 'black')                
 
     return fig
 
-# 您的 home 視圖函數
+
 def home(request):
-    draymond_green_id = '203110'
+
+    player_id = '1628983' # Shai Gilgeous-Alexander ID
 
     # 1. 獲取球員生涯數據
-    career_stats = playercareerstats.PlayerCareerStats(player_id=draymond_green_id)
-    draymond_career_df = career_stats.get_data_frames()[0]
+    career_stats = playercareerstats.PlayerCareerStats(player_id=player_id)
+    career_totals_df = career_stats.get_data_frames()[0]
 
     # 2. 獲取球員基本信息
-    player_info = CommonPlayerInfo(player_id=draymond_green_id)
+    player_info = CommonPlayerInfo(player_id=player_id)
     player_profile_df = player_info.get_data_frames()[0]
 
     player_details = {
@@ -137,39 +126,100 @@ def home(request):
         'jersey_number': player_profile_df['JERSEY'].iloc[0],
     }
 
-    # 3. 獲取按賽季的分項數據 (Year-Over-Year)
-    yoy_stats = playerdashboardbyyearoveryear.PlayerDashboardByYearOverYear(player_id=draymond_green_id)
+    # 獲取球員頭貼 URL
+    player_headshot_url = f"https://cdn.nba.com/headshots/nba/latest/1040x760/{player_id}.png"
+
+    # 3. 獲取按賽季的分項數據 (Year-Over-Year) - 從這裡提取場均數據
+    yoy_stats = playerdashboardbyyearoveryear.PlayerDashboardByYearOverYear(player_id=player_id)
     yoy_df = yoy_stats.get_data_frames()[0]
+
+    # 提取最新賽季的場均數據
+    # 確保 yoy_df 不為空
+    per_game_stats = {}
+    if not yoy_df.empty:
+        # 獲取最新賽季的數據 (假設是最後一行)
+        latest_season_stats = yoy_df.iloc[-1]
+        
+        # 獲取出場次數
+        gp = latest_season_stats.get('GP', 0) # 獲取 GP，如果沒有則設為 0
+        
+        # 計算場均數據
+        if gp > 0:
+            # 獲取計算 TS% 所需的基礎數據
+            pts = latest_season_stats.get('PTS', 0)
+            fga = latest_season_stats.get('FGA', 0)
+            fta = latest_season_stats.get('FTA', 0)
+
+            # 計算 TS%
+            ts_pct = 'N/A'
+            if (2 * (fga + 0.44 * fta)) > 0:
+                ts_pct_value = pts / (2 * (fga + 0.44 * fta))
+                ts_pct = f"{round(ts_pct_value * 100, 1)}%"
+
+            per_game_stats = {
+                'pts': round(pts / gp, 1) if 'PTS' in latest_season_stats else 'N/A',
+                'reb': round(latest_season_stats.get('REB', 0) / gp, 1) if 'REB' in latest_season_stats else 'N/A',
+                'ast': round(latest_season_stats.get('AST', 0) / gp, 1) if 'AST' in latest_season_stats else 'N/A',
+                'stl': round(latest_season_stats.get('STL', 0) / gp, 1) if 'STL' in latest_season_stats else 'N/A',
+                'blk': round(latest_season_stats.get('BLK', 0) / gp, 1) if 'BLK' in latest_season_stats else 'N/A',
+                'mpg': round(latest_season_stats.get('MIN', 0) / gp, 1) if 'MIN' in latest_season_stats else 'N/A',
+                'fg_pct': f"{round(latest_season_stats.get('FG_PCT', 0) * 100, 1)}%" if 'FG_PCT' in latest_season_stats else 'N/A',
+                'three_p_pct': f"{round(latest_season_stats.get('FG3_PCT', 0) * 100, 1)}%" if 'FG3_PCT' in latest_season_stats else 'N/A',
+                'ft_pct': f"{round(latest_season_stats.get('FT_PCT', 0) * 100, 1)}%" if 'FT_PCT' in latest_season_stats else 'N/A',
+                'ts_pct': ts_pct, # 現在使用計算出的 TS%
+            }
+        else:
+            # 如果 GP 為 0，則所有數據都設置為 N/A
+            per_game_stats = {
+                'pts': 'N/A', 'reb': 'N/A', 'ast': 'N/A', 'stl': 'N/A', 'blk': 'N/A',
+                'mpg': 'N/A', 'fg_pct': 'N/A', 'three_p_pct': 'N/A', 'ft_pct': 'N/A', 'ts_pct': 'N/A'
+            }
+    else:
+        # 如果沒有數據，所有統計數據都設置為 N/A
+        per_game_stats = {
+            'pts': 'N/A', 'reb': 'N/A', 'ast': 'N/A', 'stl': 'N/A', 'blk': 'N/A',
+            'mpg': 'N/A', 'fg_pct': 'N/A', 'three_p_pct': 'N/A', 'ft_pct': 'N/A', 'ts_pct': 'N/A'
+        }
+
 
     # 4. 獲取今天的比賽記分板數據
     today_scoreboard = scoreboard.ScoreBoard()
     scoreboard_data = today_scoreboard.get_dict()
     games_df = pd.DataFrame(scoreboard_data['scoreboard']['games'])
 
-    # 5. 獲取投籃數據並生成圖表 (使用您提供的函數)
-    # 獲取 Draymond Green 的隊伍 ID (已經在 player_details 中)
-    # 我們需要一個賽季列表，例如獲取 2022-23 和 2023-24 賽季的數據
-    seasons = ['2022-23', '2023-24'] # 您可以根據需要調整賽季
-    team_ids = [player_details['team_id']] # 獲取當前球隊的投籃數據
+    # 5. 獲取最近比賽日誌 (PlayerGameLog)
+    # 選擇最新的幾個賽季，或者只獲取最新的賽季來簡化
+    current_season = '2023-24' # 根據實際情況調整
+    gamelog = playergamelog.PlayerGameLog(player_id=player_id, season=current_season)
+    player_gamelog_df = gamelog.get_data_frames()[0]
+    latest_games_df = player_gamelog_df.head(5) # 獲取最近5場比賽
 
-    draymond_shots_df = get_shot_data(draymond_green_id, team_ids, seasons)
+    # 6. 獲取投籃數據並生成圖表
+    seasons_for_shot_chart = [current_season] # 假設只顯示當前賽季的投籃圖
+    team_ids_for_shot_chart = [player_details['team_id']]
 
-    # 生成 matplotlib 圖表
-    shot_chart_fig = shot_chart(draymond_shots_df, player_details['full_name'], season=seasons)
+    player_shots_df = get_shot_data(player_id, team_ids_for_shot_chart, seasons_for_shot_chart)
+
+    shot_chart_fig = shot_chart(player_shots_df, player_details['full_name'], season=seasons_for_shot_chart)
 
     # 將圖表轉換為 Base64 編碼的圖片字符串
     buf = io.BytesIO()
-    shot_chart_fig.savefig(buf, format='png', bbox_inches='tight') # 保存到緩衝區
-    buf.seek(0) # 將緩衝區指針移到開頭
-    shot_chart_image_base64 = base64.b64encode(buf.read()).decode('utf-8') # 編碼為 Base64
-    plt.close(shot_chart_fig) # 關閉圖形，釋放記憶體
+    shot_chart_fig.savefig(buf, format='png', bbox_inches='tight')
+    buf.seek(0)
+    shot_chart_image_base64 = base64.b64encode(buf.read()).decode('utf-8')
+    plt.close(shot_chart_fig)
 
     context = {
+        'player_id': player_id,
         'player_name': player_details['full_name'],
         'player_details': player_details,
-        'career_stats': draymond_career_df.to_html(classes='table table-striped'),
+        'player_headshot_url': player_headshot_url,
+        'per_game_stats': per_game_stats,
+        'career_totals_html': career_totals_df.to_html(classes='table table-striped'),
         'year_over_year_stats': yoy_df.to_html(classes='table table-striped'),
         'games_data': games_df.to_html(classes='table table-striped'),
-        'shot_chart_image': shot_chart_image_base64, # 傳遞 Base64 編碼的圖片
+        'latest_games_html': latest_games_df.to_html(classes='table table-striped', index=False),
+        'shot_chart_image': shot_chart_image_base64,
     }
+
     return render(request, 'home.html', context)
