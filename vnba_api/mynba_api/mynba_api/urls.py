@@ -18,9 +18,10 @@ from django.contrib import admin
 from django.urls import path, include
 from nba import views  # ✅ 改這裡（從 nba 匯入 views）
 
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.home, name='home'),  # 頁面首頁
-    path('', include('teams.urls')),
-    
+    path('home/', views.home, name='home'),  # 頁面首頁
+    path('team/', include('players.urls')),
 ]
+
