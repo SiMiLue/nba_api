@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ team.name }} Roster</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+        }
+        .team-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .team-logo {
+            width: 100px;
+            height: 100px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #f4f4f4;
+        }
+        a {
+            text-decoration: none;
+            color: #007bff;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="team-header">
+        <img src="{{ team.logo_url }}" alt="{{ team.name }} Logo" class="team-logo">
+        <h1>{{ team.name }}</h1>
+    </div>
+
+    <h3>Roster</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Player</th>
+                <th>Pos</th>
+                <th>Height</th>
+                <th>Weight</th>
+                <th>Birthdate</th>
+                <th>Age</th>
+                <th>Exp</th>
+                <th>School</th>
+                <th>How Acquired</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for player in players %}
+            <tr>
+                <td>{{ player.number }}</td>
+                <td>{{ player.name }}</td>
+                <td>{{ player.position }}</td>
+                <td>{{ player.height }}</td>
+                <td>{{ player.weight }} lbs</td>
+                <td>{{ player.birth_date }}</td>
+                <td>{{ player.age }}</td>
+                <td>{{ player.experience }}</td>
+                <td>{{ player.school }}</td>
+                <td>{{ player.how_acquired }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>

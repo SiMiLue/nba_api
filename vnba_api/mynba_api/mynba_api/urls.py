@@ -15,11 +15,14 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 from nba import views  # ✅ 改這裡（從 nba 匯入 views）
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('home/', views.home, name='home'),  # 頁面首頁
-    
+    path('player_details/<int:player_id>/', views.home, name='home'),  # 頁面首頁
+    path('team/', include('teams.urls')),
+    path('teams/', include('players.urls'))
 ]
+
