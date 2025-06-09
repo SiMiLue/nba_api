@@ -89,7 +89,7 @@
 <body>
     <div class="header">
         <h1>Roster</h1>
-        <button class="stats-button">Team Stats ➜</button> <!-- 🔥 Header 右側按鈕 -->
+      <a href="{% url 'teams:team_players' team_id %}" class="stats-button">Team Stats ➜</a>
     </div>
 
     <div id="player-list">
@@ -137,7 +137,7 @@
             console.log(`📡 正在載入更多球員... (offset: ${offset})`);
 
             try {
-                const response = await fetch(`/${teamSlug}/roster?offset=${offset}`, {
+                const response = await fetch(`/team/${teamSlug}/roster?offset=${offset}`, {
                     headers: { 'X-Requested-With': 'XMLHttpRequest' }
                 });
 

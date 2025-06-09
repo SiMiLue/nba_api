@@ -11,6 +11,7 @@ from nba_api.stats.static import players, teams
 import json
 import pandas as pd
 import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import io
@@ -36,7 +37,7 @@ def get_shot_data(player_id: int, team_ids: list, seasons: list) -> pd.DataFrame
     for season in seasons:
         for team_id in team_ids:
             shot_data = shotchartdetail.ShotChartDetail(
-                team_id=team_id,
+                team_id=0,
                 player_id=player_id,
                 context_measure_simple='FGA',
                 season_nullable=season
@@ -97,9 +98,9 @@ def shot_chart(df: pd.DataFrame, name: str, season=None, RA=True, extent=(-250, 
     return fig
 
 
-def home(request):
+def home(request, player_id):
 
-    player_id = '1628983' # Shai Gilgeous-Alexander ID
+    #player_id = '1628983' # Shai Gilgeous-Alexander ID
 
     # 1. 獲取球員生涯數據
     career_stats = playercareerstats.PlayerCareerStats(player_id=player_id)

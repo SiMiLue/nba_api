@@ -52,6 +52,7 @@ async def team_roster(request, team_slug):
     """根據球隊 URL slug 顯示球員名單（分批載入，支援異步視圖）"""
     offset = int(request.GET.get('offset', 0))
     team_info = get_team_info(team_slug)
+    team_id = team_info['id']
 
     if not team_info:
         return JsonResponse({'error': f"Team {team_slug} not found", 'players': []})
@@ -62,7 +63,7 @@ async def team_roster(request, team_slug):
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':  # 判斷是否為 AJAX 請求
         return JsonResponse({'players': players})
 
-    return render(request, 'teams/TeamRoster.html', {'team_slug': team_slug, 'players': players})
+    return render(request, 'teams/TeamRoster.html', {'team_slug': team_slug,'team_id': team_id, 'players': players})
 
 
 DIVISION_MAP = {
