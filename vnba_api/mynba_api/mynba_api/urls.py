@@ -24,3 +24,4 @@ urlpatterns = [
     path('home/', views.home, name='home'),  # 頁面首頁
     path('team/', include('players.urls')),
 ]
+

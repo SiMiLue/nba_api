@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NBA Roster</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 2px solid #ccc;
+        }
+        .header h1 {
+            margin: 0;
+        }
+        .stats-button {
+            background: black;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease-in-out;
+        }
+        .stats-button:hover {
+            background: rgb(190, 190, 190);
+        }
+
+        #player-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            padding: 20px;
+        }
+        .player-card {
+            position: relative; /* ✅ 設定相對定位，讓號碼與名字固定 */
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.3s ease-in-out;
+        }
+        .player-card:hover {
+            transform: scale(1.05);
+            cursor: pointer;
+        }
+        .player-container {
+            position: relative; /* ✅ 讓號碼與圖片保持一致，不會上移 */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .player-card img {
+            width: 100%;
+            height: auto;
+        }
+        .jersey {
+            position: absolute;
+            bottom: 10px; /* ✅ 固定在左下 */
+            left: 10px;
+            font-size: 40px;
+            font-weight: bold;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        .player-name {
+            text-align: center; /* ✅ 讓名字置中 */
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        #loading-indicator {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Roster</h1>
+        <button class="stats-button">Team Stats ➜</button> <!-- 🔥 Header 右側按鈕 -->
+    </div>
+
+    <div id="player-list">
+        {% for player in players %}
+        <div class="player-card" onclick="redirectToPlayer('{{ player.id }}')">
+            <div class="player-container">
+                <img src="{{ player.headshot_url }}"
+                     alt="{{ player.name }} Headshot"
+                     legacy="true"
+                     loading="lazy"
+                     width="1040"
+                     height="760"
+                     decoding="async"
+                     data-nimg="1"
+                     style="color: transparent;"
+                     onerror="this.src='/static/default_player.png';">
+                <div class="jersey">{{ player.jersey }}</div> <!-- ✅ 號碼固定在左下 -->
+            </div>
+            <div class="player-name">{{ player.name }}</div> <!-- ✅ 名字置中在圖片下方 -->
+        </div>
+        {% endfor %}
+
+        <div id="loading-indicator">
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <script>
+        let offset = 6;
+        const teamSlug = "{{ team_slug }}";
+        let isLoading = false;
+        let allPlayersLoaded = false;
+
+        function redirectToPlayer(playerId) {
+            window.location.href = `/player_details/${playerId}`;
+        }
+
+        async function loadNextBatch() {
+            if (isLoading || allPlayersLoaded) return;
+
+            isLoading = true;
+            const loadingIndicator = document.getElementById('loading-indicator');
+            loadingIndicator.style.display = 'block';
+
+            console.log(`📡 正在載入更多球員... (offset: ${offset})`);
+
+            try {
+                const response = await fetch(`/${teamSlug}/roster?offset=${offset}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.players.length === 0) {
+                    console.log("⚠️ 所有球員已載入，停止監聽器！");
+                    allPlayersLoaded = true;
+                    loadingIndicator.innerHTML = '<p>所有球員已載入</p>';
+                    window.removeEventListener("scroll", scrollHandler);
+                    return;
+                }
+
+                console.log(`✅ 成功載入 ${data.players.length} 位球員`);
+
+                data.players.forEach(player => {
+                    const playerCard = document.createElement("div");
+                    playerCard.className = "player-card";
+                    playerCard.onclick = () => redirectToPlayer(player.id);
+
+                    playerCard.innerHTML = `
+                        <div class="player-container">
+                            <img src="${player.headshot_url}"
+                                 alt="${player.name} Headshot"
+                                 legacy="true"
+                                 loading="lazy"
+                                 width="1040"
+                                 height="760"
+                                 decoding="async"
+                                 data-nimg="1"
+                                 style="color: transparent;"
+                                 onerror="this.src='/static/default_player.png';">
+                            <div class="jersey">${player.jersey}</div>
+                        </div>
+                        <div class="player-name">${player.name || 'Unknown Player'}</div>
+                    `;
+
+                    document.getElementById("player-list").insertBefore(playerCard, loadingIndicator);
+                });
+
+                offset += 6;
+
+            } catch (error) {
+                console.error("❌ 載入球員資料時發生錯誤:", error);
+                loadingIndicator.innerHTML = '<p style="color: red;">載入失敗，請重新整理頁面</p>';
+            } finally {
+                isLoading = false;
+                loadingIndicator.style.display = 'none';
+            }
+        }
+
+        function scrollHandler() {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const windowHeight = window.innerHeight;
+            const documentHeight = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
+
+            if (scrollTop + windowHeight >= documentHeight - 200) {
+                console.log("🔄 觸發載入更多球員");
+                loadNextBatch();
+            }
+        }
+
+        window.addEventListener("scroll", scrollHandler);
+    </script>
+</body>
+</html>
