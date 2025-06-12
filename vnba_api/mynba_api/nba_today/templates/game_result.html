@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}NBA Games Today{% endblock %}
+
+{% block content %}
+<style>
+    .game-card {
+        border-radius: 0.75rem;
+        border: 1px solid #dee2e6;
+        transition: all 0.2s ease-in-out;
+    }
+    .game-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .team-logo {
+        max-width: 90px;
+        height: 90px;
+        object-fit: contain;
+    }
+    .vs-separator {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #6c757d;
+        line-height: 1;
+    }
+    .team-score {
+        font-size: 3rem;
+        font-weight: 700;
+    }
+    .team-record {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    .card-footer {
+        background-color: #f8f9fa;
+    }
+</style>
+
+<div class="container-fluid p-0">
+    <div class="jumbotron jumbotron-fluid bg-light">
+        <div class="container text-center py-5">
+            <h1 class="display-4">Today's NBA Games</h1>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-4">
+    {% if results %}
+        {% for game in results %}
+            <div class="card game-card mb-4">
+                <div class="card-body">
+                    <div class="row align-items-center text-center">
+                        <!-- Home Team -->
+                        <div class="col-5">
+                            <img src="{{ game.homeTeam.teamLogo }}" alt="{{ game.homeTeam.teamTricode }} Logo" class="team-logo mb-2">
+                            <h5>{{ game.homeTeam.teamCity }} {{ game.homeTeam.teamName }}</h5>
+                            <p class="team-record mb-2">({{ game.homeTeam.wins }} - {{ game.homeTeam.losses }})</p>
+                            <p class="team-score">{{ game.homeTeam.score }}</p>
+                        </div>
+
+                        <!-- VS Separator -->
+                        <div class="col-2 d-flex justify-content-center align-items-center">
+                            <span class="vs-separator">VS</span>
+                        </div>
+
+                        <!-- Away Team -->
+                        <div class="col-5">
+                            <img src="{{ game.awayTeam.teamLogo }}" alt="{{ game.awayTeam.teamTricode }} Logo" class="team-logo mb-2">
+                            <h5>{{ game.awayTeam.teamCity }} {{ game.awayTeam.teamName }}</h5>
+                            <p class="team-record mb-2">({{ game.awayTeam.wins }} - {{ game.awayTeam.losses }})</p>
+                            <p class="team-score">{{ game.awayTeam.score }}</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer text-center">
+                    <a class="btn btn-outline-primary" href="{% url 'nba_today:game_leaders' num=game.homeTeam.gameNum %}" role="button">View Game Details</a>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info text-center" role="alert">
+            <h4 class="alert-heading">No Games Found</h4>
+            <p>There were no games played on the selected date.</p>
+        </div>
+    {% endif %}
+</div>
+<br><br>
+{% endblock %}

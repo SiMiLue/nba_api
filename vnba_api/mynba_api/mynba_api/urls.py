@@ -23,6 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('player_details/<int:player_id>/', views.home, name='home'),  # 頁面首頁
     path('team/', include('teams.urls')),
-    path('teams/', include('players.urls'))
+    path('teams/', include('players.urls')),
+    path('nba_today/', include('nba_today.urls'))
 ]
 
