@@ -6,11 +6,11 @@ from django.shortcuts import render
 from .service import get_team_info, fetch_team_roster
 from django.utils.text import slugify
 from nba_api.stats.static import teams as nba_teams
-# from nba_api.stats.endpoints import teaminfocommon
-
+from nba_api.stats.endpoints import leaguegamefinder
+import pandas as pd
 from collections import defaultdict
 import pprint
-
+import requests
 def teams_by_division(request):
     all_teams = nba_teams.get_teams()
     divisions = defaultdict(list)
@@ -65,7 +65,64 @@ async def team_roster(request, team_slug):
 
     return render(request, 'teams/TeamRoster.html', {'team_slug': team_slug,'team_id': team_id, 'players': players})
 
+def team_recenthistory(request, team_slug):
+    
+    team_info = get_team_info(team_slug)
+    team_id = team_info['id']
+    if not team_info:
+        return JsonResponse({'error': f"Team {team_slug} not found", 'players': []})
+    gamefinder = leaguegamefinder.LeagueGameFinder(team_id_nullable=team_id)
+    games = gamefinder.get_data_frames()[0]
+    games['GAME_DATE'] = pd.to_datetime(games['GAME_DATE'])
 
+    # 取最近 5 場
+    recent_games = games.sort_values(by='GAME_DATE', ascending=False).head(5)
+    
+    recent_games['O_PTS'] = (recent_games['PTS'] - recent_games['PLUS_MINUS']).astype(int)
+    recent_games['logo_url'] = f"https://cdn.nba.com/logos/nba/{team_id}/global/L/logo.svg"    
+    recent_games['OPPONENT_TEAM_SLUGS'] = recent_games.apply(
+    lambda row: get_opponent_team_id(row['MATCHUP'], row['TEAM_ID']), axis=1
+    )
+
+    recent_games['o_logo_url'] = recent_games.apply( lambda row: find_logo(row['OPPONENT_TEAM_SLUGS']), axis=1) 
+    return render(request, 'teams/TeamRecentHistory.html', {
+        'team_id': team_id,
+        'recent_games': recent_games.to_dict('records'),
+        'team_slug': team_slug,
+    })
+
+def find_logo(slug):
+    team_id = nba_teams.find_team_by_abbreviation(slug)['id']
+    return f"https://cdn.nba.com/logos/nba/{team_id}/global/L/logo.svg" 
+
+def get_opponent_team_id(matchup, team_id):
+    teams = nba_teams.get_teams()
+    team_abbr_to_id = {team['abbreviation']: team['id'] for team in teams}
+    if '@' in matchup:
+        opponent_abbr = matchup.split(' @ ')[-1]
+    else:
+        opponent_abbr = matchup.split(' vs. ')[-1]
+    return opponent_abbr
+def predict_schedule(request):
+    url = 'https://cdn.nba.com/static/json/staticData/scheduleLeagueV2.json'
+    data = requests.get(url).json()
+    games = []
+
+    for game in data['leagueSchedule']['gameDates']:
+        for g in game['games']:
+            games.append({
+                'game_date': game['gameDate'],
+                'home_team': g['homeTeam']['teamTricode'],
+                'away_team': g['awayTeam']['teamTricode'],
+                'game_time_utc': g['gameDateTimeUTC']
+            })
+    for item in games[-5:-1]:
+        item['logo_url']=find_logo((item['home_team']).lower())
+        item['o_logo_url']=find_logo(item['away_team'].lower())
+    return render(request, 'teams/predict.html', {
+        'recent_games': games[-5:-1]
+    })
+  
 DIVISION_MAP = {
     # Atlantic Division
     1610612738: 'Atlantic',  # Boston Celtics
