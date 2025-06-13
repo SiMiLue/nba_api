@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ team_name }} - Recent Games</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; border-bottom: 1px solid #ccc; text-align: left; }
+        .header { display: flex; gap: 10px; margin-bottom: 20px; }
+        .stats-button {
+            background: black;
+            color: white;
+            font-weight: bold;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+        .stats-button:hover { background: #555; }
+        .scorecard {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: Arial, sans-serif;
+    margin: 40px 0;
+        }
+
+        .team {
+            text-align: center;
+            margin: 0 40px;
+        }
+
+        .team-logo {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+            margin-bottom: 8px;
+        }
+
+        .team-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .score {
+            display: flex;
+            align-items: center;
+            font-size: 36px;
+            font-weight: bold;
+            color: #000;
+        }
+
+        .dash {
+            margin: 0 20px;
+        }
+
+        .points {
+            min-width: 60px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="{% url 'team-roster' team_slug %}" class="stats-button">Roster</a>
+        <a href="{% url 'team_recenthistory' team_slug %}" class="stats-button">Recent History</a>
+        <a href="{% url 'teams:team_players' team_id %}" class="stats-button">Team Stats ➜</a>
+    </div>
+
+    <h2 style="text-align: center;">{{ team_name }} 最近 5 場比賽</h2>
+    <table>
+        <tbody>
+            {% for game in recent_games %}
+           
+            <div class="scorecard">
+                <div class="team">
+                    <img src="{{ game.logo_url }}" alt="{{ game.team_slug }}" class="team-logo">
+                    <div class="team-name">{{ game.TEAM_ABBREVIATION }}</div>
+                </div>
+                <div class="score">
+                    <span class="points">{{ game.PTS }}</span>
+                    <span class="dash">-</span>
+                    <span class="points">{{ game.O_PTS }}</span>
+                </div>
+                
+                <div class="team">
+                    <img src="{{ game.o_logo_url }}" alt="{{ game.away_team_name }}" class="team-logo">
+                    <div class="team-name">{{ game.OPPONENT_TEAM_SLUGS }}</div>
+                </div>
+
+                <div style="text-align: center;">
+                    <p>{{ game.GAME_DATE }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

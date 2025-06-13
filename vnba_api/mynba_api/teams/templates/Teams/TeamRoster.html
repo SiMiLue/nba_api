@@ -88,8 +88,10 @@
 </head>
 <body>
     <div class="header">
-        <h1>Roster</h1>
-      <a href="{% url 'teams:team_players' team_id %}" class="stats-button">Team Stats ➜</a>
+        
+        <a href="{% url 'team-roster' team_slug %}" class="stats-button">Roster</a>
+        <a href="{% url 'team_recenthistory' team_slug %}" class="stats-button">Recent History</a>
+        <a href="{% url 'teams:team_players' team_id %}" class="stats-button">Team Stats ➜</a>
     </div>
 
     <div id="player-list">
